@@ -27,7 +27,7 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
     <div className="overlay" onClick={onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h2>{trader}'s Performance</h2>
+          <h2>Performance Overview <span style={{ color: 'var(--text-faint)', fontWeight: 500, fontSize: 12 }}>· ORION v3.7299</span></h2>
           <button className="icon-btn" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
