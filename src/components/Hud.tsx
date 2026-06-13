@@ -1,13 +1,16 @@
 import { useStore } from '../state/store';
 import { sim } from '../state/sim';
 import { useSimTick } from '../hooks/useSim';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { money, pct } from '../util/format';
 
 export function Hud() {
   useSimTick(300);
+  const isMobile = useIsMobile();
   const hud = useStore((s) => s.settings.hud);
   const portfolio = useStore((s) => s.portfolio);
   if (!hud.show) return null;
+  const m = (n: number, sign = false) => money(n, { sign, compact: isMobile });
 
   const val = sim.getValuation();
   const equity = val?.equity ?? portfolio.cash;
@@ -25,20 +28,20 @@ export function Hud() {
       {hud.balance && (
         <div>
           <div className="hud-grip">Account Value</div>
-          <div className="hud-balance mono">{money(equity)}</div>
+          <div className="hud-balance mono">{m(equity)}</div>
         </div>
       )}
       {anyRow && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {hud.dayPnl && (
-            <Row k="Day P/L" cls={dayPl >= 0 ? 'up' : 'down'} v={`${money(dayPl, { sign: true })} (${pct(dayPlPct)})`} />
+            <Row k="Day P/L" cls={dayPl >= 0 ? 'up' : 'down'} v={`${m(dayPl, true)} (${pct(dayPlPct)})`} />
           )}
           {hud.ytdPnl && (
-            <Row k="YTD P/L" cls={ytdPl >= 0 ? 'up' : 'down'} v={`${money(ytdPl, { sign: true })} (${pct(ytdPlPct)})`} />
+            <Row k="YTD P/L" cls={ytdPl >= 0 ? 'up' : 'down'} v={`${m(ytdPl, true)} (${pct(ytdPlPct)})`} />
           )}
-          {hud.openTrades && <Row k="Open positions" v={String(openTrades)} />}
+          {hud.openTrades && <Row k={isMobile ? 'Positions' : 'Open positions'} v={String(openTrades)} />}
           {hud.optionsHeld && <Row k="Contracts" v={String(contracts)} />}
-          {hud.buyingPower && <Row k="Buying power" v={money(val?.buyingPower ?? portfolio.cash)} />}
+          {hud.buyingPower && <Row k={isMobile ? 'Buying pwr' : 'Buying power'} v={m(val?.buyingPower ?? portfolio.cash)} />}
         </div>
       )}
     </div>

@@ -10,6 +10,8 @@ import { Hud } from './components/Hud';
 import { SettingsModal } from './components/SettingsModal';
 import { StatsModal } from './components/StatsModal';
 import { OptionsChain } from './components/OptionsChain';
+import { MobileShell } from './components/MobileShell';
+import { useIsMobile } from './hooks/useIsMobile';
 import { loadGame } from './state/persistence';
 
 export function App() {
@@ -62,6 +64,29 @@ function Workspace() {
   const [showStats, setShowStats] = useState(false);
   const [showChain, setShowChain] = useState(false);
   const toast = useStore((s) => s.toast);
+  const isMobile = useIsMobile();
+
+  const modals = (
+    <>
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onStats={() => { setShowSettings(false); setShowStats(true); }} />}
+      {showStats && <StatsModal onClose={() => setShowStats(false)} />}
+      {showChain && <OptionsChain onClose={() => setShowChain(false)} />}
+      {toast && <div className="toast">{toast}</div>}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileShell
+          onSettings={() => setShowSettings(true)}
+          onStats={() => setShowStats(true)}
+          onOpenChain={() => setShowChain(true)}
+        />
+        {modals}
+      </>
+    );
+  }
 
   return (
     <div className="app">
@@ -74,10 +99,7 @@ function Workspace() {
         </div>
         <OrderPanel onOpenChain={() => setShowChain(true)} />
       </div>
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onStats={() => { setShowSettings(false); setShowStats(true); }} />}
-      {showStats && <StatsModal onClose={() => setShowStats(false)} />}
-      {showChain && <OptionsChain onClose={() => setShowChain(false)} />}
-      {toast && <div className="toast">{toast}</div>}
+      {modals}
     </div>
   );
 }

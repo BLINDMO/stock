@@ -7,7 +7,7 @@ import { price as fmtPrice, pct } from '../util/format';
 
 type Tab = 'all' | 'stock' | 'crypto' | 'holdings';
 
-export function Watchlist() {
+export function Watchlist({ onPick }: { onPick?: () => void } = {}) {
   useSimTick(400);
   const symbol = useStore((s) => s.symbol);
   const setSymbol = useStore((s) => s.setSymbol);
@@ -52,7 +52,10 @@ export function Watchlist() {
             <div
               key={a.symbol}
               className={'wl-row' + (symbol === a.symbol ? ' active' : '')}
-              onClick={() => setSymbol(a.symbol)}
+              onClick={() => {
+                setSymbol(a.symbol);
+                onPick?.();
+              }}
             >
               <div className="col-l">
                 <div className="sym">{a.symbol}</div>
