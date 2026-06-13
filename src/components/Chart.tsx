@@ -15,6 +15,7 @@ import { ASSET_MAP } from '../engine/assets';
 import type { Timeframe } from '../engine/market';
 import { bollinger, ema, macd, rsi, sma, vwap } from '../engine/indicators';
 import { price as fmtPrice, pct, compact } from '../util/format';
+import { isStockOpen, nextOpenLabel } from '../util/marketHours';
 
 const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '1h', '4h', '1D', '1W'];
 
@@ -250,8 +251,22 @@ export function Chart() {
       <div className="chart-wrap">
         <div ref={hostRef} style={{ position: 'absolute', inset: 0, bottom: showOsc ? '32%' : 0 }} />
         {showOsc && <div ref={oscRef} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '32%' }} />}
+        <MarketClosedBanner symbol={symbol} />
       </div>
     </>
+  );
+}
+
+function MarketClosedBanner({ symbol }: { symbol: string }) {
+  useSimTick(1000);
+  const def = ASSET_MAP[symbol];
+  const now = sim.engine?.now ?? 0;
+  if (!def || def.class !== 'stock' || isStockOpen(now)) return null;
+  return (
+    <div className="market-closed-banner">
+      <span className="mcb-dot" />
+      Market closed · {symbol} reopens {nextOpenLabel(now)}
+    </div>
   );
 }
 

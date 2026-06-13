@@ -19,6 +19,11 @@ export interface AssetDef {
   supply: number;
   /** Whether the instrument supports listed options. */
   optionable: boolean;
+  /**
+   * If set, the instrument only starts trading this many days before the
+   * world's genesis (a recent IPO/listing) and has no history before then.
+   */
+  ipoDaysAgo?: number;
 }
 
 export interface Candle {
@@ -48,6 +53,8 @@ export interface AssetState {
   dayAccum: { date: string; open: number; high: number; low: number; volume: number } | null;
   /** Base shares/coins traded per minute, before activity scaling. */
   baseVol: number;
+  /** Epoch seconds when the instrument first lists (≤ genesis for legacy names). */
+  ipoAt: number;
   lastSession: string; // YYYY-MM-DD of the dayOpen reference
 }
 
@@ -77,10 +84,16 @@ export interface OptionPosition {
   avgPremium: number;
 }
 
+export interface LinkedBank {
+  bank: string;
+  last4: string;
+  holder: string;
+}
+
 export interface Trade {
   id: string;
   time: number;
-  kind: 'stock' | 'option';
+  kind: 'stock' | 'option' | 'cash';
   symbol: string;
   action: string; // human readable, e.g. "Buy 10 AAPL"
   qty: number;
@@ -92,6 +105,8 @@ export interface Trade {
 export interface Portfolio {
   cash: number;
   startingCash: number;
+  /** Total net money the trader has put in (deposits − withdrawals). */
+  netDeposits: number;
   stocks: StockPosition[];
   options: OptionPosition[];
   trades: Trade[];
@@ -136,6 +151,7 @@ export interface Settings {
   enabledClasses: { stock: boolean; crypto: boolean };
   defaultTimeframe: string;
   speed: number; // sim minutes per real second
+  linkedBank: LinkedBank | null;
 }
 
 export interface WorldMeta {

@@ -404,6 +404,32 @@ select {
 .chart-legend span {
   margin-right: 10px;
 }
+.market-closed-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.market-closed-banner .mcb-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
 
 /* ============ Right panel: order ticket ============ */
 .right {
@@ -1044,7 +1070,215 @@ input.input:focus {
   }
 }
 
-/* ============ Mobile shell ============ */
+/* ============ IPO badge ============ */
+.ipo-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+/* ============ HUD ribbon (mobile, docked, non-overlapping) ============ */
+.hud-ribbon {
+  display: flex;
+  gap: 7px;
+  align-items: stretch;
+  padding: 7px 10px;
+  overflow-x: auto;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.hud-ribbon::-webkit-scrollbar {
+  display: none;
+}
+.hud-ribbon .chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 11px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.hud-ribbon .chip-balance {
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+.hud-ribbon .ck {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.hud-ribbon .cv {
+  font-size: 13px;
+  font-weight: 700;
+}
+.hud-ribbon .cv i {
+  font-style: normal;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* ============ Banking ============ */
+.bank-balance {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.bank-balance .k {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.bank-balance .v {
+  font-size: 17px;
+  font-weight: 700;
+}
+.bank-card {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--panel)), var(--panel));
+  border: 1px solid var(--border);
+}
+.bank-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bank-logo {
+  font-size: 22px;
+}
+.bank-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.bank-acct {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.bank-status {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--up);
+  background: var(--up-soft);
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+/* ============ Option breakeven / profit projection ============ */
+.be-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.be-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.be-head b {
+  font-size: 16px;
+  color: var(--accent);
+}
+.be-sub {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin: 8px 0 6px;
+}
+.be-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.be-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 9px;
+  background: var(--bg-2);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.be-target {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.be-move {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+.be-pl {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-weight: 700;
+}
+.be-pct {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.be-foot {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 9px;
+  text-align: center;
+}
+
+/* ============ Portfolio summary (positions tab) ============ */
+.positions-view {
+  width: 100%;
+  overflow-y: auto;
+}
+.port-summary {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.ps-main {
+  margin-bottom: 12px;
+}
+.ps-k {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 3px;
+}
+.ps-v {
+  font-size: 26px;
+  font-weight: 800;
+}
+.ps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.ps-sv {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ============ Mobile shell tweaks ============ */
 .app.mobile {
   height: 100vh;
   height: 100dvh;
@@ -1090,7 +1324,7 @@ input.input:focus {
   white-space: nowrap;
 }
 .m-topbar .icon-btn {
-  width: 30px;
+  width: 28px;
   height: 30px;
   flex-shrink: 0;
 }
@@ -1107,6 +1341,9 @@ input.input:focus {
   min-height: 0;
   flex-direction: column;
   position: relative;
+}
+.m-view.m-scroll {
+  overflow-y: auto;
 }
 .m-view .panel {
   border: none;
@@ -1128,15 +1365,17 @@ input.input:focus {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .m-bottomnav button.active {
   color: var(--accent);
 }
 .m-bottomnav .ic {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -1163,26 +1402,6 @@ input.input:focus {
   }
   .chart-head .px-big {
     font-size: 18px;
-  }
-  .hud {
-    min-width: 0;
-    padding: 7px 9px;
-    gap: 4px;
-    font-size: 10px;
-  }
-  .hud.tl,
-  .hud.tr {
-    top: 96px;
-  }
-  .hud .hud-row {
-    gap: 10px;
-    font-size: 10px;
-  }
-  .hud .hud-balance {
-    font-size: 15px;
-  }
-  .hud .hud-grip {
-    font-size: 8px;
   }
   .overlay {
     padding: 0;

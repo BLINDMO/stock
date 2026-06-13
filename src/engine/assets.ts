@@ -13,7 +13,8 @@ const stock = (
   vol: number,
   beta: number,
   supply: number,
-): AssetDef => ({ symbol, name, class: 'stock', sector, seedPrice, drift, vol, beta, supply, optionable: true });
+  extra: Partial<AssetDef> = {},
+): AssetDef => ({ symbol, name, class: 'stock', sector, seedPrice, drift, vol, beta, supply, optionable: true, ...extra });
 
 const crypto = (
   symbol: string,
@@ -59,6 +60,12 @@ export const STOCKS: AssetDef[] = [
   stock('COIN', 'Coinbase Global', 'Financials', 224.6, 0.18, 0.72, 2.10, 0.25e9),
   stock('SPY', 'SPDR S&P 500 ETF', 'Index', 543.1, 0.09, 0.16, 1.00, 0.92e9),
   stock('QQQ', 'Invesco QQQ Trust', 'Index', 472.8, 0.11, 0.20, 1.10, 0.55e9),
+  // Freshly listed: priced at the offering, no options yet, no price history
+  // before yesterday's debut — a true new-issue trading profile.
+  stock('SPCX', 'SpaceX (Space Exploration Technologies)', 'Aerospace', 168.0, 0.24, 0.66, 1.5, 1.8e9, {
+    optionable: false,
+    ipoDaysAgo: 1,
+  }),
 ];
 
 export const CRYPTOS: AssetDef[] = [

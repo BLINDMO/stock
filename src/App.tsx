@@ -10,6 +10,7 @@ import { Hud } from './components/Hud';
 import { SettingsModal } from './components/SettingsModal';
 import { StatsModal } from './components/StatsModal';
 import { OptionsChain } from './components/OptionsChain';
+import { BankingModal } from './components/BankingModal';
 import { MobileShell } from './components/MobileShell';
 import { useIsMobile } from './hooks/useIsMobile';
 import { loadGame } from './state/persistence';
@@ -63,14 +64,16 @@ function Workspace() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showChain, setShowChain] = useState(false);
+  const [showBanking, setShowBanking] = useState(false);
   const toast = useStore((s) => s.toast);
   const isMobile = useIsMobile();
 
   const modals = (
     <>
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onStats={() => { setShowSettings(false); setShowStats(true); }} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onStats={() => { setShowSettings(false); setShowStats(true); }} onBanking={() => { setShowSettings(false); setShowBanking(true); }} />}
       {showStats && <StatsModal onClose={() => setShowStats(false)} />}
       {showChain && <OptionsChain onClose={() => setShowChain(false)} />}
+      {showBanking && <BankingModal onClose={() => setShowBanking(false)} />}
       {toast && <div className="toast">{toast}</div>}
     </>
   );
@@ -82,6 +85,7 @@ function Workspace() {
           onSettings={() => setShowSettings(true)}
           onStats={() => setShowStats(true)}
           onOpenChain={() => setShowChain(true)}
+          onBanking={() => setShowBanking(true)}
         />
         {modals}
       </>
@@ -90,7 +94,7 @@ function Workspace() {
 
   return (
     <div className="app">
-      <TopBar onSettings={() => setShowSettings(true)} onStats={() => setShowStats(true)} />
+      <TopBar onSettings={() => setShowSettings(true)} onStats={() => setShowStats(true)} onBanking={() => setShowBanking(true)} />
       <div className="workspace">
         <Watchlist />
         <div className="chart-area">

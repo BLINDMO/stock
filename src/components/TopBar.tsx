@@ -2,20 +2,14 @@ import { SPEED_PRESETS, useStore } from '../state/store';
 import { sim } from '../state/sim';
 import { useSimTick } from '../hooks/useSim';
 import { clock } from '../util/format';
+import { isStockOpen } from '../util/marketHours';
 
-function stocksOpen(now: number): boolean {
-  const d = new Date(now * 1000);
-  const dow = d.getUTCDay();
-  const m = d.getUTCHours() * 60 + d.getUTCMinutes();
-  return dow >= 1 && dow <= 5 && m >= 14 * 60 + 30 && m < 21 * 60;
-}
-
-export function TopBar({ onSettings, onStats }: { onSettings: () => void; onStats: () => void }) {
+export function TopBar({ onSettings, onStats, onBanking }: { onSettings: () => void; onStats: () => void; onBanking: () => void }) {
   useSimTick(500);
   const speed = useStore((s) => s.settings.speed);
   const setSpeed = useStore((s) => s.setSpeed);
   const now = sim.engine?.now ?? 0;
-  const open = stocksOpen(now);
+  const open = isStockOpen(now);
 
   return (
     <div className="topbar">
@@ -45,6 +39,9 @@ export function TopBar({ onSettings, onStats }: { onSettings: () => void; onStat
         ))}
       </div>
 
+      <button className="icon-btn" title="Banking" onClick={onBanking}>
+        🏦
+      </button>
       <button className="icon-btn" title="Statistics" onClick={onStats}>
         📊
       </button>

@@ -131,7 +131,46 @@ export function OptionsChain({ onClose }: { onClose: () => void }) {
             <Greek k="Theta" v={sel.theta.toFixed(3)} />
             <Greek k="Vega" v={sel.vega.toFixed(3)} />
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+
+          {(() => {
+            const premium = sel.price + Math.max(0.01, sel.price * 0.015); // ask
+            const isCall = selected.type === 'call';
+            const breakeven = isCall ? selected.strike + premium : selected.strike - premium;
+            const cost = premium * qty * CONTRACT_MULTIPLIER;
+            const moves = isCall ? [0.05, 0.1, 0.2] : [-0.05, -0.1, -0.2];
+            const rows = moves.map((mv) => {
+              const target = spot * (1 + mv);
+              const intrinsic = isCall ? Math.max(0, target - selected.strike) : Math.max(0, selected.strike - target);
+              const pl = (intrinsic - premium) * qty * CONTRACT_MULTIPLIER;
+              return { mv, target, pl, plPct: cost > 0 ? (pl / cost) * 100 : 0 };
+            });
+            return (
+              <div className="be-panel">
+                <div className="be-head">
+                  <span>Breakeven at expiry</span>
+                  <b className="mono">{fmtPrice(breakeven)}</b>
+                </div>
+                <div className="be-sub">Projected profit/loss if {symbol} reaches:</div>
+                <div className="be-rows">
+                  {rows.map((r) => (
+                    <div className="be-row" key={r.mv}>
+                      <span className="be-target mono">
+                        {fmtPrice(r.target)}
+                        <span className="be-move">{r.mv > 0 ? '+' : ''}{(r.mv * 100).toFixed(0)}%</span>
+                      </span>
+                      <span className={'be-pl mono ' + (r.pl >= 0 ? 'up' : 'down')}>
+                        {money(r.pl, { sign: true })}
+                        <span className="be-pct">{r.plPct >= 0 ? '+' : ''}{r.plPct.toFixed(0)}%</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="be-foot">Max loss {money(cost)} · Max gain {isCall ? 'unlimited' : money((selected.strike - premium) * qty * CONTRACT_MULTIPLIER)}</div>
+              </div>
+            );
+          })()}
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
             <div style={{ flex: '0 0 110px' }}>
               <label style={{ fontSize: 11, color: 'var(--text-dim)' }}>Contracts</label>
               <input

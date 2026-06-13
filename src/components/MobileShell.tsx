@@ -7,31 +7,28 @@ import { Watchlist } from './Watchlist';
 import { Chart } from './Chart';
 import { Hud } from './Hud';
 import { OrderPanel } from './OrderPanel';
+import { Positions } from './Positions';
+import { isStockOpen } from '../util/marketHours';
 
-type MTab = 'markets' | 'chart' | 'trade';
-
-function stocksOpen(now: number): boolean {
-  const d = new Date(now * 1000);
-  const dow = d.getUTCDay();
-  const m = d.getUTCHours() * 60 + d.getUTCMinutes();
-  return dow >= 1 && dow <= 5 && m >= 14 * 60 + 30 && m < 21 * 60;
-}
+type MTab = 'markets' | 'chart' | 'trade' | 'positions';
 
 export function MobileShell({
   onSettings,
   onStats,
   onOpenChain,
+  onBanking,
 }: {
   onSettings: () => void;
   onStats: () => void;
   onOpenChain: () => void;
+  onBanking: () => void;
 }) {
   const [tab, setTab] = useState<MTab>('chart');
   const symbol = useStore((s) => s.symbol);
 
   return (
     <div className="app mobile">
-      <MobileTopBar onSettings={onSettings} onStats={onStats} />
+      <MobileTopBar onSettings={onSettings} onStats={onStats} onBanking={onBanking} />
 
       <div className="m-main">
         <div className="m-view" style={{ display: tab === 'markets' ? 'flex' : 'none' }}>
@@ -42,7 +39,10 @@ export function MobileShell({
           <Hud />
         </div>
         <div className="m-view" style={{ display: tab === 'trade' ? 'flex' : 'none' }}>
-          <OrderPanel onOpenChain={onOpenChain} />
+          <OrderPanel onOpenChain={onOpenChain} hidePositions />
+        </div>
+        <div className="m-view m-scroll" style={{ display: tab === 'positions' ? 'flex' : 'none' }}>
+          <Positions showSummary />
         </div>
       </div>
 
@@ -59,17 +59,29 @@ export function MobileShell({
           <span className="ic">⇅</span>
           Trade
         </button>
+        <button className={tab === 'positions' ? 'active' : ''} onClick={() => setTab('positions')}>
+          <span className="ic">▦</span>
+          Positions
+        </button>
       </nav>
     </div>
   );
 }
 
-function MobileTopBar({ onSettings, onStats }: { onSettings: () => void; onStats: () => void }) {
+function MobileTopBar({
+  onSettings,
+  onStats,
+  onBanking,
+}: {
+  onSettings: () => void;
+  onStats: () => void;
+  onBanking: () => void;
+}) {
   useSimTick(500);
   const speed = useStore((s) => s.settings.speed);
   const setSpeed = useStore((s) => s.setSpeed);
   const now = sim.engine?.now ?? 0;
-  const open = stocksOpen(now);
+  const open = isStockOpen(now);
 
   return (
     <div className="topbar m-topbar">
@@ -89,6 +101,7 @@ function MobileTopBar({ onSettings, onStats }: { onSettings: () => void; onStats
           </button>
         ))}
       </div>
+      <button className="icon-btn" onClick={onBanking}>🏦</button>
       <button className="icon-btn" onClick={onStats}>📊</button>
       <button className="icon-btn" onClick={onSettings}>⚙</button>
     </div>

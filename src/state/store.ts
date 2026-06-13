@@ -10,6 +10,7 @@ import {
 } from '../engine/portfolio';
 import type {
   HudConfig,
+  LinkedBank,
   OptionContractRef,
   Portfolio,
   RiskProfile,
@@ -19,6 +20,8 @@ import type {
 } from '../engine/types';
 import { sim } from './sim';
 import { clearGame, loadGame, saveGame } from './persistence';
+import { money } from '../util/format';
+import { isStockOpen } from '../util/marketHours';
 
 export const RISK_PROFILES: Record<RiskProfile['key'], RiskProfile> = {
   conservative: { key: 'conservative', label: 'Steady', volMult: 0.7, driftMult: 1.05 },
@@ -72,6 +75,7 @@ function defaultSettings(cfg: OnboardingConfig): Settings {
     enabledClasses: cfg.enabledClasses,
     defaultTimeframe: cfg.defaultTimeframe,
     speed: 5,
+    linkedBank: null,
   };
 }
 
@@ -98,6 +102,8 @@ interface AppState {
   placeStockOrder: (symbol: string, side: 'buy' | 'sell', qty: number) => string | null;
   tradeOption: (ref: OptionContractRef, side: 'buy' | 'sell', qty: number) => string | null;
   closeOption: (id: string) => void;
+  deposit: (amount: number) => string | null;
+  withdraw: (amount: number, bank: LinkedBank) => string | null;
   showToast: (msg: string) => void;
   saveNow: () => void;
 }
@@ -106,6 +112,7 @@ function freshPortfolio(startingCash: number, now: number): Portfolio {
   return {
     cash: startingCash,
     startingCash,
+    netDeposits: startingCash,
     stocks: [],
     options: [],
     trades: [],
@@ -189,12 +196,24 @@ export const useStore = create<AppState>((set, get) => {
       const portfolio = freshPortfolio(cfg.startingCash, now);
       const firstSymbol = defs[0]?.symbol ?? 'AAPL';
       const meta: WorldMeta = { seed, now: engine.now, genesis: now, createdAt: Date.now() };
+      // Open on a market that's actually moving: if equities are closed at
+      // launch (nights/weekends) and crypto is on, start on a live coin so the
+      // first chart isn't a flat line.
+      const stocksLive = isStockOpen(engine.now);
+      const defaultSymbol =
+        cfg.enabledClasses.stock && stocksLive
+          ? 'AAPL'
+          : cfg.enabledClasses.crypto
+            ? 'BTC'
+            : cfg.enabledClasses.stock
+              ? 'AAPL'
+              : firstSymbol;
       set({
         phase: 'trading',
         meta,
         settings,
         portfolio,
-        symbol: cfg.enabledClasses.stock ? 'AAPL' : firstSymbol,
+        symbol: defaultSymbol,
         timeframe: cfg.defaultTimeframe,
         tick: get().tick + 1,
       });
@@ -210,11 +229,17 @@ export const useStore = create<AppState>((set, get) => {
       const defs = assetsForClasses(data.settings.enabledClasses);
       const engine = MarketEngine.restore(data.engine, defs, risk.volMult, risk.driftMult);
       sim.setEngine(engine);
+      // Migrate saves made before banking / net-deposit tracking existed.
+      const portfolio: Portfolio = {
+        ...data.portfolio,
+        netDeposits: data.portfolio.netDeposits ?? data.portfolio.startingCash,
+      };
+      const settings: Settings = { ...data.settings, linkedBank: data.settings.linkedBank ?? null };
       set({
         phase: 'trading',
         meta: data.meta,
-        settings: data.settings,
-        portfolio: data.portfolio,
+        settings,
+        portfolio,
         symbol: data.ui.symbol,
         timeframe: data.ui.timeframe as Timeframe,
         indicators: data.ui.indicators as IndicatorKey[],
@@ -345,6 +370,54 @@ export const useStore = create<AppState>((set, get) => {
       const pos = get().portfolio.options.find((o) => o.id === id);
       if (!pos) return;
       get().tradeOption(pos.ref, pos.qty > 0 ? 'sell' : 'buy', Math.abs(pos.qty));
+    },
+
+    deposit: (amount) => {
+      if (!(amount > 0)) return 'Enter an amount greater than zero';
+      const now = sim.engine?.now ?? nowEpoch();
+      const pf = { ...get().portfolio };
+      // A funding event is a cash flow, not a gain: shift the P/L baselines too.
+      pf.cash += amount;
+      pf.netDeposits += amount;
+      pf.dayStartEquity += amount;
+      pf.yearStartEquity += amount;
+      pf.trades = [
+        mkTrade({ time: now, kind: 'cash', symbol: 'CASH', action: `Deposit ${money(amount)}`, qty: 0, price: 0, value: amount }),
+        ...pf.trades,
+      ].slice(0, 500);
+      set({ portfolio: pf, tick: get().tick + 1 });
+      sim.recompute();
+      get().saveNow();
+      return null;
+    },
+
+    withdraw: (amount, bank) => {
+      if (!(amount > 0)) return 'Enter an amount greater than zero';
+      const val = sim.getValuation();
+      const available = val?.buyingPower ?? get().portfolio.cash;
+      if (amount > available + 1e-9) return 'Amount exceeds your available cash balance';
+      const now = sim.engine?.now ?? nowEpoch();
+      const pf = { ...get().portfolio };
+      pf.cash -= amount;
+      pf.netDeposits -= amount;
+      pf.dayStartEquity -= amount;
+      pf.yearStartEquity -= amount;
+      pf.trades = [
+        mkTrade({
+          time: now,
+          kind: 'cash',
+          symbol: 'CASH',
+          action: `Withdraw ${money(amount)} → ${bank.bank} ••${bank.last4}`,
+          qty: 0,
+          price: 0,
+          value: -amount,
+        }),
+        ...pf.trades,
+      ].slice(0, 500);
+      set({ portfolio: pf, settings: { ...get().settings, linkedBank: bank }, tick: get().tick + 1 });
+      sim.recompute();
+      get().saveNow();
+      return null;
     },
 
     showToast: (msg) => {

@@ -11,8 +11,9 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
   const val = sim.getValuation();
   const equity = val?.equity ?? pf.cash;
 
-  const totalReturn = equity - pf.startingCash;
-  const totalReturnPct = pf.startingCash > 0 ? (totalReturn / pf.startingCash) * 100 : 0;
+  const basis = pf.netDeposits ?? pf.startingCash;
+  const totalReturn = equity - basis;
+  const totalReturnPct = basis > 0 ? (totalReturn / basis) * 100 : 0;
   const closed = pf.trades.filter((t) => typeof t.realized === 'number' && t.realized !== 0);
   const wins = closed.filter((t) => (t.realized ?? 0) > 0);
   const winRate = closed.length > 0 ? (wins.length / closed.length) * 100 : 0;

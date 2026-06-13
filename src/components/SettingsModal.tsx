@@ -5,7 +5,7 @@ import type { HudConfig, RiskProfile, Settings } from '../engine/types';
 
 type Tab = 'general' | 'display' | 'account';
 
-export function SettingsModal({ onClose, onStats }: { onClose: () => void; onStats: () => void }) {
+export function SettingsModal({ onClose, onStats, onBanking }: { onClose: () => void; onStats: () => void; onBanking: () => void }) {
   const settings = useStore((s) => s.settings);
   const setSettings = useStore((s) => s.setSettings);
   const setHud = useStore((s) => s.setHud);
@@ -102,6 +102,13 @@ export function SettingsModal({ onClose, onStats }: { onClose: () => void; onSta
 
           {tab === 'account' && (
             <>
+              <div className="setting-row">
+                <div>
+                  <div className="label">Banking</div>
+                  <div className="desc">Deposit funds or withdraw to your linked bank account.</div>
+                </div>
+                <button className="btn" onClick={onBanking}>Open</button>
+              </div>
               <div className="setting-row">
                 <div>
                   <div className="label">View statistics</div>

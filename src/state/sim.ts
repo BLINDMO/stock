@@ -150,3 +150,7 @@ class SimController {
 
 export const sim = new SimController();
 export { CONTRACT_MULTIPLIER };
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { __orion: SimController }).__orion = sim;
+}

@@ -152,5 +152,5 @@ export function ytdPnl(pf: Portfolio, currentEquity: number): number {
 }
 
 export function totalPnl(pf: Portfolio, currentEquity: number): number {
-  return currentEquity - pf.startingCash;
+  return currentEquity - pf.netDeposits;
 }

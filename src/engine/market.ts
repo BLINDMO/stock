@@ -38,6 +38,7 @@ export interface EngineSnapshot {
     dayOpen: number;
     yearOpen: number;
     lastSession: string;
+    ipoAt?: number;
     dailyBars: Candle[];
   }[];
 }
@@ -96,6 +97,7 @@ export class MarketEngine {
         yearOpen: def.seedPrice,
         dayAccum: null,
         baseVol: Math.max(50, def.supply / 50000),
+        ipoAt: def.ipoDaysAgo != null ? startNow - def.ipoDaysAgo * 86400 : startNow - 100 * 365 * 86400,
         lastSession: f.date,
       });
     }
@@ -112,6 +114,12 @@ export class MarketEngine {
 
   price(symbol: string): number {
     return this.assets.get(symbol)?.price ?? 0;
+  }
+
+  /** True once an instrument has listed (always true for legacy names). */
+  isListed(symbol: string): boolean {
+    const st = this.assets.get(symbol);
+    return st ? this.now >= st.ipoAt : false;
   }
 
   /**
@@ -190,6 +198,7 @@ export class MarketEngine {
 
     for (const def of this.defs.values()) {
       const st = this.assets.get(def.symbol)!;
+      if (this.now < st.ipoAt) continue; // not yet listed
       const isStock = def.class === 'stock';
       if (isStock && !stocksLive) {
         // Market closed: no trading. (Gaps appear at next open.)
@@ -252,6 +261,7 @@ export class MarketEngine {
 
     for (const def of this.defs.values()) {
       const st = this.assets.get(def.symbol)!;
+      if (this.now < st.ipoAt) continue; // not yet listed
       const isStock = def.class === 'stock';
       const dt = isStock ? dtStock : dtCrypto;
       const factor = isStock ? eqFactor : cryptoFactor;
@@ -308,6 +318,7 @@ export class MarketEngine {
 
   private rolloverDates(f: TimeFields): void {
     for (const st of this.assets.values()) {
+      if (this.now < st.ipoAt) continue;
       if (st.lastSession !== f.date) {
         st.prevClose = st.price;
         st.dayOpen = st.price;
@@ -341,6 +352,7 @@ export class MarketEngine {
         dayOpen: s.dayOpen,
         yearOpen: s.yearOpen,
         lastSession: s.lastSession,
+        ipoAt: s.ipoAt,
         dailyBars: s.dailyBars.slice(-320),
       })),
     };
@@ -366,6 +378,7 @@ export class MarketEngine {
       st.dayOpen = a.dayOpen;
       st.yearOpen = a.yearOpen;
       st.lastSession = a.lastSession;
+      if (typeof a.ipoAt === 'number') st.ipoAt = a.ipoAt;
       st.dailyBars = a.dailyBars;
     }
     eng.synthRecentMinutes(420);
@@ -381,22 +394,29 @@ export class MarketEngine {
     const tmp = new RNG(hashSeed('synth:' + this.now));
     for (const def of this.defs.values()) {
       const st = this.assets.get(def.symbol)!;
+      if (this.now < st.ipoAt) {
+        st.bars = [];
+        continue;
+      }
+      // Don't fabricate candles from before the instrument existed.
+      const listedMinutes = Math.floor((this.now - st.ipoAt) / MINUTE);
+      const n = Math.min(count, Math.max(1, listedMinutes));
       const dt = def.class === 'stock' ? 1 / STOCK_MIN_PER_YEAR : 1 / CRYPTO_MIN_PER_YEAR;
       const std = def.vol * this.volMult * Math.sqrt(dt);
       // Walk backward from the current price to synthesize closes.
-      const closes: number[] = new Array(count);
+      const closes: number[] = new Array(n);
       let p = st.price;
-      for (let i = count - 1; i >= 0; i--) {
+      for (let i = n - 1; i >= 0; i--) {
         closes[i] = p;
         p = p / Math.exp(tmp.normal(0, std));
       }
       const bars: Candle[] = [];
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < n; i++) {
         const open = i === 0 ? closes[0] / Math.exp(tmp.normal(0, std)) : closes[i - 1];
         const close = closes[i];
         const wick = std * 1.5;
         bars.push({
-          time: this.now - (count - i) * MINUTE,
+          time: this.now - (n - i) * MINUTE,
           open: round(open),
           high: round(Math.max(open, close) * (1 + Math.abs(tmp.normal(0, wick)))),
           low: round(Math.min(open, close) * (1 - Math.abs(tmp.normal(0, wick)))),
@@ -414,7 +434,19 @@ export class MarketEngine {
     const st = this.assets.get(symbol);
     if (!st) return [];
     if (tf === '1D' || tf === '1W') {
-      const daily = st.dailyBars;
+      // Include the day currently being built so the daily/weekly chart shows
+      // today's live, forming candle (and brand-new listings aren't blank).
+      const daily = st.dailyBars.slice();
+      if (st.dayAccum) {
+        daily.push({
+          time: dayStartFromDate(st.dayAccum.date),
+          open: st.dayAccum.open,
+          high: Math.max(st.dayAccum.high, st.price),
+          low: Math.min(st.dayAccum.low, st.price),
+          close: st.price,
+          volume: Math.round(st.dayAccum.volume),
+        });
+      }
       if (tf === '1D') return daily;
       return aggregate(daily, 7 * 86400); // weekly buckets
     }

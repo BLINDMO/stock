@@ -20,6 +20,7 @@ export function Watchlist({ onPick }: { onPick?: () => void } = {}) {
   const holdSet = useMemo(() => new Set(holdings.filter((h) => h.qty !== 0).map((h) => h.symbol)), [holdings]);
 
   const rows = universe.filter((a) => {
+    if (sim.engine && !sim.engine.isListed(a.symbol)) return false; // pre-IPO: not yet tradable
     if (tab === 'stock' && a.class !== 'stock') return false;
     if (tab === 'crypto' && a.class !== 'crypto') return false;
     if (tab === 'holdings' && !holdSet.has(a.symbol)) return false;
@@ -58,7 +59,10 @@ export function Watchlist({ onPick }: { onPick?: () => void } = {}) {
               }}
             >
               <div className="col-l">
-                <div className="sym">{a.symbol}</div>
+                <div className="sym">
+                  {a.symbol}
+                  {a.ipoDaysAgo != null && <span className="ipo-badge">NEW</span>}
+                </div>
                 <div className="name">{a.name}</div>
               </div>
               <div className="col-r">
